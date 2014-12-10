@@ -49,6 +49,7 @@ new ELSCLIENT(host, port, function(elsClient, msg) {
 			    console.log(err);
 			} else {
 			    ++docInserted;
+			    console.log('response', response);
 			}
 			++iterator;
 			if (iterator >= docsLength) {
