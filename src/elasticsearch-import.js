@@ -44,12 +44,12 @@ new ELSCLIENT(host, port, function(elsClient, msg) {
 		var docsJSON = JSON.parse(data);
 		var docsLength = docsJSON.length;
 		while ((doc = docsJSON.shift())) {
+		    delete (doc._id);
 		    elsClient.post(index, type, doc, function(error, reponse) {
-			if (err) {
-			    console.log(err);
+			if (error) {
+			    console.log(error);
 			} else {
 			    ++docInserted;
-			    console.log('response', arguments);
 			}
 			++iterator;
 			if (iterator >= docsLength) {
