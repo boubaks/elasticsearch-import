@@ -7,6 +7,7 @@ var opt = getopt.create([
     ['i', 'index=ARG', 'index where you will import'],
     ['t', 'type=ARG', 'type of docs that you will import'],
     ['', 'input=ARG', 'name of file the JSON will be import'],
+    ['', 'withId', 'update with the _id in the JSON'],
     ['P', 'port=ARG', 'port to connect to'],
     ['H', 'host=ARG', 'server to connect to'],
     ['h', 'help', 'display this help'],
@@ -23,6 +24,7 @@ var host = opt.options.host ? opt.options.host : 'localhost';
 var index = opt.options.index ? opt.options.index : '_all';
 var type = opt.options.type ? opt.options.type : index;
 var input = opt.options.input ? opt.options.input : 'input';
+var withId = opt.options.withId ? opt.options.withId : null;
 
 var docInserted = 0;
 /*
@@ -44,7 +46,8 @@ new ELSCLIENT(host, port, function(elsClient, msg) {
 		var docsJSON = JSON.parse(data);
 		var docsLength = docsJSON.length;
 		while ((doc = docsJSON.shift())) {
-		    delete (doc._id);
+			if (!withId)
+			    delete (doc._id);
 		    elsClient.post(index, type, doc, function(error, reponse) {
 			if (error) {
 			    console.log(error);
