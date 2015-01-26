@@ -27,6 +27,7 @@ var input = opt.options.input ? opt.options.input : 'input';
 var withId = opt.options.withId ? opt.options.withId : null;
 
 var docInserted = 0;
+var docManage = 0;
 /*
 ** Initialization elasticsearch client & query
 */
@@ -48,11 +49,17 @@ new ELSCLIENT(host, port, function(elsClient, msg) {
 		while ((doc = docsJSON.shift())) {
 			if (!withId)
 			    delete (doc._id);
-		    elsClient.post(index, type, doc, function(error, reponse) {
-			if (error) {
-			    console.log(error);
+			if (docManage >= 1000) {
+				docsJSON.push(doc);
 			} else {
-			    ++docInserted;
+				++docManage;
+			    elsClient.post(index, type, doc, function(error, reponse) {
+			    	--docManage;
+					if (error) {
+					    console.log(error);
+					} else {
+					    ++docInserted;
+					}
 			}
 			++iterator;
 			if (iterator >= docsLength) {
