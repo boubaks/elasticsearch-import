@@ -43,34 +43,34 @@ new ELSCLIENT(host, port, function(elsClient, msg) {
 	    process.kill();
 	} else {
 	    try {
-		var iterator = 0;
-		var docsJSON = JSON.parse(data);
-		var docsLength = docsJSON.length;
-		while ((doc = docsJSON.shift())) {
-			if (!withId)
-			    delete (doc._id);
-			if (docManage >= 1000) {
-				docsJSON.push(doc);
-			} else {
-				++docManage;
-			    elsClient.post(index, type, doc, function(error, reponse) {
-			    	--docManage;
-					if (error) {
-					    console.log(error);
-					} else {
-					    ++docInserted;
+			var iterator = 0;
+			var docsJSON = JSON.parse(data);
+			var docsLength = docsJSON.length;
+			while ((doc = docsJSON.shift())) {
+				if (!withId)
+				    delete (doc._id);
+				if (docManage >= 1000) {
+					docsJSON.push(doc);
+				} else {
+					++docManage;
+				    elsClient.post(index, type, doc, function(error, reponse) {
+				    	--docManage;
+						if (error) {
+						    console.log(error);
+						} else {
+						    ++docInserted;
+						}
+					++iterator;
+					if (iterator >= docsLength) {
+					    console.log(docInserted +' inserted docs http:localhost:9200/' + index + '/' + type);
+					    process.kill();
 					}
+			    });
+				}
 			}
-			++iterator;
-			if (iterator >= docsLength) {
-			    console.log(docInserted +' inserted docs http:localhost:9200/' + index + '/' + type);
-			    process.kill();
-			}
-		    });
-		}
 	    } catch (e) {
-		console.log(e);
-		process.kill();
+			console.log(e);
+			process.kill();
 	    }
 	}
     });
