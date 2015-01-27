@@ -27,16 +27,51 @@ var input = opt.options.input ? opt.options.input : 'input';
 var withId = opt.options.withId ? opt.options.withId : null;
 
 var docInserted = 0;
-var docManage = 0;
 /*
 ** Initialization elasticsearch client & query
 */
+function elsPost(docsJSON, index, type, callback) {
+	var doc = docsJSON.shift();
+	if (doc) {
+		if (!withId)
+		   delete (doc._id);
+		elsClient.post(index, type, doc, function(error, response) {
+			if (error) {
+			    console.log(error);
+			} else {
+			    ++docInserted;
+			}
+			elsPost(docsJSON, index, type, callback);
+		});
+	} else {
+		callback();
+	}
+}
+
 new ELSCLIENT(host, port, function(elsClient, msg) {
     if (!elsClient)
-	throw('Couldn\'t connect to ELS');
+		throw('Couldn\'t connect to ELS');
     var scope = this;
     
     console.log('Connected to ELS ' + 'http://' + host + ':' + port);
+    function elsPost(docsJSON, index, type, callback) {
+		var doc = docsJSON.shift();
+		if (doc) {
+			if (!withId)
+			   delete (doc._id);
+			elsClient.post(index, type, doc, function(error, response) {
+				if (error) {
+				    console.log(error);
+				} else {
+				    ++docInserted;
+				}
+				elsPost(docsJSON, index, type, callback);
+			});
+		} else {
+			callback();
+		}
+	}
+    
     fs.readFile(input, {encoding: 'utf-8'}, function(err, data) {
 	if (err) {
             console.log(err);
@@ -46,31 +81,31 @@ new ELSCLIENT(host, port, function(elsClient, msg) {
 			var iterator = 0;
 			var docsJSON = JSON.parse(data);
 			var docsLength = docsJSON.length;
+			elsPost(docsJSON, index, type, function() {
+				console.log(docInserted +' inserted docs http:localhost:9200/' + index + '/' + type);
+				process.kill();
+			});
+			/*
 			while ((doc = docsJSON.shift())) {
 				if (!withId)
 				    delete (doc._id);
-				if (docManage >= 1000) {
-					docsJSON.push(doc);
+			    elsClient.post(index, type, doc, function(error, reponse) {
+				if (error) {
+				    console.log(error);
 				} else {
-					++docManage;
-				    elsClient.post(index, type, doc, function(error, reponse) {
-				    	--docManage;
-						if (error) {
-						    console.log(error);
-						} else {
-						    ++docInserted;
-						}
-					++iterator;
-					if (iterator >= docsLength) {
-					    console.log(docInserted +' inserted docs http:localhost:9200/' + index + '/' + type);
-					    process.kill();
-					}
-			    });
+				    ++docInserted;
 				}
+				++iterator;
+				if (iterator >= docsLength) {
+				    console.log(docInserted +' inserted docs http:localhost:9200/' + index + '/' + type);
+				    process.kill();
+				}
+			    });
 			}
+			*/
 	    } catch (e) {
-			console.log(e);
-			process.kill();
+		console.log(e);
+		process.kill();
 	    }
 	}
     });
