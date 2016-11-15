@@ -26,7 +26,8 @@ $> elasticsearch-import
     
     $> 	elasticsearch-import --input fileToImport.json --host localhost --port 9200 --index test --type test
 
-    You can use the --withId option if you want to keep the _id of every object on the JSON file otherwise it will reattribute a _id for every object
+    You can use the --withId option if you want to keep the _id of every object on the JSON file
+    otherwise it will reattribute a _id for every object
   
 ## Notes
 
