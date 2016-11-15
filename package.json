@@ -1,6 +1,6 @@
 {
   "name": "elasticsearch-import",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "import JSON files into your elasticsearch",
   "main": "./src/elasticsearch-import.js",
   "dependencies": {
