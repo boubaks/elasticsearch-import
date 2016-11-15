@@ -1,7 +1,8 @@
+#!/usr/bin/env node
 var fs = require('fs');
 var getopt = require('node-getopt');
 var logger = require(__dirname + '/../lib/logger');
-var ELSCLIENT = require(__dirname + '/../lib/ElsClient').ElsClient;
+var elsClient = require('elasticsearch-client');
 
 var opt = getopt.create([
     ['i', 'index=ARG', 'index where you will import'],
@@ -23,90 +24,63 @@ var port = opt.options.port ? opt.options.port : 9200;
 var host = opt.options.host ? opt.options.host : 'localhost';
 var index = opt.options.index ? opt.options.index : '_all';
 var type = opt.options.type ? opt.options.type : index;
-var input = opt.options.input ? opt.options.input : 'input';
+var input = opt.options.input ? opt.options.input : null;
 var withId = opt.options.withId ? opt.options.withId : null;
 
 var docInserted = 0;
-/*
-** Initialization elasticsearch client & query
-*/
-function elsPost(docsJSON, index, type, callback) {
-	var doc = docsJSON.shift();
-	if (doc) {
-		if (!withId)
-		   delete (doc._id);
-		elsClient.post(index, type, doc, function(error, response) {
-			if (error) {
-			    console.log(error);
-			} else {
-			    ++docInserted;
-			}
-			elsPost(docsJSON, index, type, callback);
-		});
-	} else {
-		callback();
-	}
-}
 
-new ELSCLIENT(host, port, function(elsClient, msg) {
-    if (!elsClient)
-		throw('Couldn\'t connect to ELS');
-    var scope = this;
-    
-    console.log('Connected to ELS ' + 'http://' + host + ':' + port);
-    function elsPost(docsJSON, index, type, callback) {
-		var doc = docsJSON.shift();
-		if (doc) {
-			if (!withId)
-			   delete (doc._id);
-			elsClient.post(index, type, doc, function(error, response) {
-				if (error) {
-				    console.log(error);
-				} else {
-				    ++docInserted;
-				}
-				elsPost(docsJSON, index, type, callback);
-			});
-		} else {
-			callback();
-		}
-	}
-    
-    fs.readFile(input, {encoding: 'utf-8'}, function(err, data) {
-	if (err) {
-            console.log(err);
-	    process.kill();
-	} else {
-	    try {
-			var iterator = 0;
-			var docsJSON = JSON.parse(data);
-			var docsLength = docsJSON.length;
-			elsPost(docsJSON, index, type, function() {
-				console.log(docInserted +' inserted docs http:localhost:9200/' + index + '/' + type);
-				process.kill();
-			});
-			/*
-			while ((doc = docsJSON.shift())) {
-				if (!withId)
-				    delete (doc._id);
-			    elsClient.post(index, type, doc, function(error, reponse) {
-				if (error) {
-				    console.log(error);
-				} else {
-				    ++docInserted;
-				}
-				++iterator;
-				if (iterator >= docsLength) {
-				    console.log(docInserted +' inserted docs http:localhost:9200/' + index + '/' + type);
-				    process.kill();
-				}
-			    });
-			}
-			*/
-	    } catch (e) {
-		console.log(e);
-		process.kill();
+if (input) {
+	// Initialization elasticsearch client
+	new elsClient(host, port, function (client, msg) {
+	    if (!client) {
+	        throw('Couldn\'t connect to ELS');
 	    }
-	}
-    });
-});
+	    var scope = this;
+
+	    console.log('Connected to ELS ' + 'http://' + host + ':' + port);
+
+	    function elsPost(docsJSON, index, type, callback) {
+			var doc = docsJSON.shift();
+			if (doc) {
+				if (!withId)
+				   delete (doc._id);
+				client.post(index, type, doc, function(error, response) {
+					if (error) {
+					    console.log(error);
+					} else {
+					    ++docInserted;
+					}
+					elsPost(docsJSON, index, type, callback);
+				});
+			} else {
+				callback();
+			}
+		}
+	    
+	    fs.readFile(input, {encoding: 'utf-8'}, function(err, data) {
+			if (err) {
+		        console.log(err);
+			    process.kill();
+			} else {
+			    try {
+					var iterator = 0;
+					var docsJSON = JSON.parse(data);
+					var docsLength = docsJSON.length;
+					elsPost(docsJSON, index, type, function() {
+						console.log('elasticsearch-import inserted ' + docInserted + ' documents http:localhost:9200/' + index + '/' + type);
+						if (process.pid) {
+					        process.kill(process.pid);
+					    }
+					});
+			    } catch (e) {
+					console.log(e);
+					if (process.pid) {
+				        process.kill(process.pid);
+				    }
+			    }
+			}
+	    });
+	});
+} else {
+	console.log('error: please insert input option (--help for more information)');
+}
